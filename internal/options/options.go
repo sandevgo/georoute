@@ -3,7 +3,6 @@ package options
 import (
 	"flag"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"strings"
@@ -17,17 +16,14 @@ type Options struct {
 	ListCountries bool
 }
 
-// ParseFlags parses command-line flags and returns options
-func ParseFlags() *Options {
-	var (
-		country, format, gateway string
-		listCountries            bool
-	)
+// NewOptions creates a new Options instance and parses command-line flags
+func NewOptions() (*Options, error) {
+	opts := &Options{}
 
-	flag.StringVar(&country, "c", "", "Country code (required, e.g., RU, US)")
-	flag.StringVar(&format, "f", "plain", "Output format: 'plain' or 'ros'")
-	flag.StringVar(&gateway, "g", "", "Gateway IP for routes (required with -f=ros)")
-	flag.BoolVar(&listCountries, "list-countries", false, "Print all supported country codes")
+	flag.StringVar(&opts.Country, "c", "", "Country code (required, e.g., RU, US)")
+	flag.StringVar(&opts.Format, "f", "plain", "Output format: 'plain', 'ros' or 'ros-list'")
+	flag.StringVar(&opts.Gateway, "g", "", "Gateway IP for routes (required with -f=ros)")
+	flag.BoolVar(&opts.ListCountries, "list-countries", false, "Print all supported country codes")
 
 	flag.Usage = func() {
 		printUsage()
@@ -35,16 +31,50 @@ func ParseFlags() *Options {
 
 	flag.Parse()
 
-	opts := &Options{
-		Country:       country,
-		Format:        format,
-		Gateway:       gateway,
-		ListCountries: listCountries,
+	if opts.ListCountries {
+		printSupportedCountryCodes()
 	}
 
-	validateAndConfigure(opts)
+	if err := opts.validateCountryCode(); err != nil {
+		return nil, err
+	}
 
-	return opts
+	if opts.Format == "ros" {
+		if err := opts.validateGatewayIP(); err != nil {
+			return nil, err
+		}
+	}
+
+	err := setFormat(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	return opts, nil
+}
+
+// validateCountryCode validates the provided country code
+func (opts *Options) validateCountryCode() error {
+	if opts.Country == "" {
+		return fmt.Errorf("country code is required. Use -c to specify (e.g., -c RU)")
+	}
+	if _, ok := validCountries[opts.Country]; !ok {
+		return fmt.Errorf("error: '%s' is not a supported country code.\nRun '%s -list-countries' to see all options", opts.Country, os.Args[0])
+	}
+
+	return nil
+}
+
+// validateGatewayIP validates the provided gateway IP address
+func (opts *Options) validateGatewayIP() error {
+	if opts.Gateway == "" {
+		return fmt.Errorf("gateway is required when using -f=ros. Use -g to specify the gateway")
+	}
+	if net.ParseIP(opts.Gateway) == nil {
+		return fmt.Errorf("invalid gateway IP address: %s", opts.Gateway)
+	}
+
+	return nil
 }
 
 // printUsage prints the usage information for the command-line flags
@@ -58,6 +88,8 @@ func printUsage() {
 		"Examples:",
 		fmt.Sprintf("  %s -c US", os.Args[0]),
 		"\tOutput routes for the US in plain format",
+		fmt.Sprintf("  %s -c US -f ros-list", os.Args[0]),
+		"\tOutput routes for the US in RouterOS format to add in address-list",
 		fmt.Sprintf("  %s -c RU -f ros -g 192.168.1.1", os.Args[0]),
 		"\tOutput routes for Russia in RouterOS format with gateway 192.168.1.1",
 		fmt.Sprintf("  %s -list-countries", os.Args[0]),
@@ -72,118 +104,8 @@ func printSupportedCountryCodes() {
 	fmt.Println("Supported country codes:")
 	fmt.Println(strings.Join(getCountryCodes(), ", "))
 	fmt.Printf("\nFor details see: %s\n", countryCodeReference)
+	os.Exit(0)
 }
-
-// validateAndConfigure validates the options and configures them accordingly
-func validateAndConfigure(opts *Options) {
-	if opts.ListCountries {
-		printSupportedCountryCodes()
-		os.Exit(0)
-	}
-
-	validateCountryCode(opts.Country)
-
-	switch opts.Format {
-	case "plain":
-		opts.Format = "%s/%d\n"
-	case "ros":
-		validateGatewayIP(opts.Gateway, opts.Country)
-		opts.Format = fmt.Sprintf("/ip route add dst-address=%%s/%%d gateway=%s comment=\"%s-routes\"\n", opts.Gateway, strings.ToLower(opts.Country))
-	default:
-		log.Fatalf("Invalid format specified: %s. Use 'plain' or 'ros'.", opts.Format)
-	}
-}
-
-// validateCountryCode validates the provided country code
-func validateCountryCode(country string) {
-	if country == "" {
-		log.Fatalf("Country code is required. Use -c to specify (e.g., -c RU).\n")
-	}
-	if _, ok := validCountries[country]; !ok {
-		log.Fatalf("Error: '%s' is not a supported country code.\nRun '%s -list-countries' to see all options.\n", country, os.Args[0])
-	}
-}
-
-// validateGatewayIP validates the provided gateway IP address
-func validateGatewayIP(gateway, country string) {
-	if gateway == "" {
-		log.Fatalf("Gateway is required when using -f=ros. Use -g to specify the gateway.")
-	}
-	if net.ParseIP(gateway) == nil {
-		log.Fatalf("Invalid gateway IP address: %s", gateway)
-	}
-}
-
-// ParseFlags parses command-line flags and returns options
-//func ParseFlags() *Options {
-//	var (
-//		country, format, gateway string
-//	)
-//
-//	flag.StringVar(&country, "c", "", "Country code (required, e.g., RU, US)")
-//	flag.StringVar(&format, "f", "plain", "Output format: 'plain' or 'ros'")
-//	flag.StringVar(&gateway, "g", "", "Gateway IP for routes (required with -f=ros)")
-//	listCountries := flag.Bool("list-countries", false, "Print all supported country codes")
-//
-//	flag.Usage = func() {
-//		lines := []string{
-//			"Usage:",
-//			fmt.Sprintf("  %s -c <country> [-f <format>] [-g <gateway>]", os.Args[0]),
-//			"",
-//			"Flags:",
-//			flagString(),
-//			"Examples:",
-//			fmt.Sprintf("  %s -c US", os.Args[0]),
-//			"\tOutput routes for the US in plain format",
-//			fmt.Sprintf("  %s -c RU -f ros -g 192.168.1.1", os.Args[0]),
-//			"\tOutput routes for Russia in RouterOS format with gateway 192.168.1.1",
-//			fmt.Sprintf("  %s -list-countries", os.Args[0]),
-//			"\tList all supported country codes",
-//			"",
-//		}
-//		fmt.Fprintln(os.Stderr, strings.Join(lines, "\n"))
-//	}
-//
-//	flag.Parse()
-//
-//	if *listCountries {
-//		fmt.Println("Supported country codes:")
-//		fmt.Println(strings.Join(getCountryCodes(), ", "))
-//		fmt.Printf("\nFor details see: %s\n", countryCodeReference)
-//		os.Exit(0)
-//	}
-//
-//	// Validate country code (required)
-//	if country == "" {
-//		log.Fatalf("Country code is required. Use -c to specify (e.g., -c RU).\n")
-//	}
-//	if _, ok := validCountries[country]; !ok {
-//		log.Fatalf("Error: '%s' is not a supported country code.\nRun '%s -list-countries' to see all options.\n", country, os.Args[0])
-//	}
-//
-//	// Prepare options
-//	opts := &Options{
-//		Country: country,
-//	}
-//
-//	// Set format string based on -f and -g
-//	switch format {
-//	case "plain":
-//		opts.Format = "%s/%d\n"
-//	case "ros":
-//		if gateway == "" {
-//			log.Fatalf("Gateway is required when using -f=ros. Use -g to specify the gateway.")
-//		}
-//		if net.ParseIP(gateway) == nil {
-//			log.Fatalf("Invalid gateway IP address: %s", gateway)
-//		}
-//		opts.Format = fmt.Sprintf("/ip route add dst-address=%%s/%%d gateway=%s comment=\"%s-routes\"\n", gateway, strings.ToLower(country))
-//	default:
-//		log.Fatalf("Invalid format specified: %s. Use 'plain' or 'ros'.", format)
-//	}
-//
-//	return opts
-//}
 
 // flagString helper function for flag output
 func flagString() string {
@@ -191,4 +113,18 @@ func flagString() string {
 	flag.CommandLine.SetOutput(&buf)
 	flag.PrintDefaults()
 	return buf.String()
+}
+
+func setFormat(opts *Options) error {
+	switch opts.Format {
+	case "plain":
+		opts.Format = "%s/%d\n"
+	case "ros":
+		opts.Format = fmt.Sprintf("/ip route add dst-address=%%s/%%d gateway=%s comment=\"%s-routes\"\n", opts.Gateway, strings.ToLower(opts.Country))
+	case "ros-list":
+		opts.Format = fmt.Sprintf("/ip firewall address-list add list=%s-cidrs address=%%s/%%d comment=\"georoute\"\n", strings.ToLower(opts.Country))
+	default:
+		return fmt.Errorf("invalid format specified: %s. Use 'plain', 'ros' or 'ros-list'", opts.Format)
+	}
+	return nil
 }
