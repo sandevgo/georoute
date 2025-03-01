@@ -30,6 +30,13 @@ ripencc|AZ|ipv4|172.16.0.0|2048|20120522|reserved`,
 `,
 		},
 		{
+			name:    "Single25Block",
+			input:   `ripencc|RU|ipv4|192.168.1.0|128|20120522|allocated`,
+			country: "RU",
+			expected: `192.168.1.0/25
+`,
+		},
+		{
 			name: "NonContiguous24Blocks",
 			input: `ripencc|RU|ipv4|192.168.1.0|256|20120522|allocated
 ripencc|RU|ipv4|192.168.3.0|256|20120522|allocated
