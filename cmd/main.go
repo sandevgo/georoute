@@ -8,10 +8,14 @@ import (
 )
 
 func main() {
-	opts := options.ParseFlags()
+	opts, err := options.NewOptions()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	registry := ripencc.NewRegistry(opts.Country, opts.Format)
 
-	err := registry.GetDelegated()
+	err = registry.GetDelegated()
 	if err != nil {
 		log.Fatalln(err)
 	}
