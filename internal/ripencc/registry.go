@@ -60,6 +60,9 @@ func (r *Registry) Process() error {
 		startUint := iputil.IpToUint32(parsed.StartIP)
 		endUint := startUint + uint32(parsed.Size) - 1
 
+		fmt.Printf("Processing block: start=%s, size=%d, prefix=%d\n",
+			parsed.StartIP.String(), parsed.Size, iputil.CalcPrefix(startUint, endUint))
+
 		// First range
 		if rangeStart == 0 {
 			rangeStart = startUint
@@ -71,11 +74,14 @@ func (r *Registry) Process() error {
 		if startUint == rangeEnd+1 {
 			// Merge the ranges
 			rangeEnd = endUint
+			fmt.Printf("Merging block: new_end=%s\n", iputil.Uint32ToIP(rangeEnd).String())
 		} else {
 			// Output the merged range
 			r.Dump(rangeStart, rangeEnd)
 			rangeStart = startUint
 			rangeEnd = endUint
+			fmt.Printf("New range: start=%s, end=%s\n",
+				iputil.Uint32ToIP(rangeStart).String(), iputil.Uint32ToIP(rangeEnd).String())
 		}
 	}
 
@@ -84,9 +90,7 @@ func (r *Registry) Process() error {
 	}
 
 	// Dump the last range
-	if rangeStart != 0 {
-		r.Dump(rangeStart, rangeEnd)
-	}
+	r.Dump(rangeStart, rangeEnd)
 
 	return nil
 }
