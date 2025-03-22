@@ -57,19 +57,7 @@ func (r *Registry) Process() error {
 		
 		// Calculate the prefix directly from the size
 		// For a block of size N, the prefix is 32 - log2(N)
-		var prefix int
-		switch {
-		case parsed.Size == 1:
-			prefix = 32
-		case parsed.Size <= 256:
-			prefix = 24
-		case parsed.Size <= 65536:
-			prefix = 16
-		case parsed.Size <= 16777216:
-			prefix = 8
-		default:
-			prefix = 0
-		}
+		prefix := 32 - iputil.Log2Ceiling(uint32(parsed.Size))
 		
 		// Dump each block immediately without aggregation
 		fmt.Fprintf(r.writer, r.format, parsed.StartIP.String(), prefix)

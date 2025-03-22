@@ -28,3 +28,11 @@ func CalcPrefix(start, end uint32) int {
 	fmt.Printf("CalcPrefix: start=%d, end=%d, size=%d, prefix=%d\n", start, end, size, prefix)
 	return prefix
 }
+
+// Log2Ceiling calculates the ceiling of log base 2 of n
+func Log2Ceiling(n uint32) int {
+	if n == 0 {
+		return 0
+	}
+	return bits.Len32(n - 1)
+}
