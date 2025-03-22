@@ -48,49 +48,25 @@ func (r *Registry) Close() error {
 
 // Process processes the Ripe Delegated data from the reader and writes the CIDR blocks to the writer
 func (r *Registry) Process() error {
-	var rangeStart, rangeEnd uint32
-
 	scanner := bufio.NewScanner(r.body)
 	for scanner.Scan() {
 		parsed, err := ParseLine(r.country, scanner.Text())
 		if err != nil {
 			continue
 		}
-
-		startUint := iputil.IpToUint32(parsed.StartIP)
-		endUint := startUint + uint32(parsed.Size) - 1
-
-		// First range
-		if rangeStart == 0 {
-			rangeStart = startUint
-			rangeEnd = endUint
-			continue
-		}
-
-		// Check if the current range is contiguous with the previous range
-		if startUint == rangeEnd+1 {
-			// Merge the ranges
-			rangeEnd = endUint
-		} else {
-			// Output the merged range
-			r.Dump(rangeStart, rangeEnd)
-			rangeStart = startUint
-			rangeEnd = endUint
-		}
+		
+		// Calculate the prefix directly from the size
+		// For a block of size N, the prefix is 32 - log2(N)
+		prefix := 32 - iputil.Log2Ceiling(uint32(parsed.Size))
+		
+		// Dump each block immediately without aggregation
+		fmt.Fprintf(r.writer, r.format, parsed.StartIP.String(), prefix)
 	}
 
 	if err := scanner.Err(); err != nil {
 		return fmt.Errorf("error reading HTTP response: %v", err)
 	}
 
-	// Dump the last range
-	if rangeStart != 0 {
-		r.Dump(rangeStart, rangeEnd)
-	}
-
 	return nil
 }
 
-func (r *Registry) Dump(rangeStart, rangeEnd uint32) {
-	fmt.Fprintf(r.writer, r.format, iputil.Uint32ToIP(rangeStart).String(), iputil.CalcPrefix(rangeStart, rangeEnd))
-}

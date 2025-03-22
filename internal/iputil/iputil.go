@@ -1,6 +1,7 @@
 package iputil
 
 import (
+	"fmt"
 	"math/bits"
 	"net"
 )
@@ -24,5 +25,14 @@ func CalcPrefix(start, end uint32) int {
 	size := end - start + 1
 	power := uint32(bits.TrailingZeros32(size / 256)) // log2 of largest power of 2 in size
 	prefix := 24 - int(power)
+	fmt.Printf("CalcPrefix: start=%d, end=%d, size=%d, prefix=%d\n", start, end, size, prefix)
 	return prefix
+}
+
+// Log2Ceiling calculates the ceiling of log base 2 of n
+func Log2Ceiling(n uint32) int {
+	if n == 0 {
+		return 0
+	}
+	return bits.Len32(n - 1)
 }

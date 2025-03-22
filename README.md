@@ -39,7 +39,7 @@ georoute -c <country> [-f <format>] [-g <gateway>]
 
 ### Flags
 - `-c <country>`: Country code (required, e.g., `RU`, `US`).
-- `-f <format>`: Output format: `plain` (default) or `ros`.
+- `-f <format>`: Output format: `plain` (default), `ros` or `ros-list`.
 - `-g <gateway>`: Gateway IP for routes (required with `-f ros`).
 - `-list-countries`: Print all supported country codes.
 - `-h`: Show help with usage and examples.
