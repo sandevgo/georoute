@@ -28,8 +28,6 @@ func ParseLine(code, line string) (*ParsedLine, error) {
 		return nil, fmt.Errorf("invalid size: %s", parts[4])
 	}
 
-	fmt.Printf("ParsedLine: code=%s, ip=%s, size=%d\n", parts[1], startIP.String(), size)
-
 	return &ParsedLine{
 		StartIP: startIP,
 		Size:    size,
