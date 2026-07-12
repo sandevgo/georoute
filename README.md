@@ -12,10 +12,26 @@
 
 ## Installation
 
-### Prerequisites
-- [Go](https://golang.org/dl/) 1.24 or later.
+### Install a Prebuilt Binary
+Download the archive for your platform from the [GitHub Releases](https://github.com/sandevgo/georoute/releases) page.
+
+On Linux and macOS, unpack the downloaded `.gz` file and make the binary executable:
+
+```bash
+gunzip georoute-linux-amd64.gz
+chmod +x georoute
+sudo mv georoute /usr/local/bin/
+```
+
+Choose the archive that matches your platform and architecture:
+
+- Linux: `georoute-linux-amd64.gz` or `georoute-linux-arm64.gz`
+- macOS: `georoute-darwin-amd64.gz` or `georoute-darwin-arm64.gz`
+- Windows: download and extract `georoute-windows-amd64.zip`, then add the directory containing `georoute.exe` to your `PATH`.
 
 ### Build from Source
+Prerequisite: [Go](https://golang.org/dl/) 1.24 or later.
+
 1. Clone the repository:
    ```bash
    git clone https://github.com/sandevgo/georoute.git
