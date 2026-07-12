@@ -38,6 +38,10 @@ jobs:
             goarch: amd64
             artifact_name: georoute-linux-amd64
             binary_name: georoute
+          - goos: linux
+            goarch: arm64
+            artifact_name: georoute-linux-arm64
+            binary_name: georoute
           - goos: darwin
             goarch: amd64
             artifact_name: georoute-darwin-amd64
