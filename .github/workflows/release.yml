@@ -35,19 +35,28 @@ jobs:
         include:
           - goos: linux
             goarch: amd64
-            archive_name: georoute-linux-amd64.tar.gz
+            archive_name: georoute-linux-amd64.gz
+            archive_format: gz
+            binary_name: georoute
+          - goos: linux
+            goarch: arm64
+            archive_name: georoute-linux-arm64.gz
+            archive_format: gz
             binary_name: georoute
           - goos: darwin
             goarch: amd64
-            archive_name: georoute-darwin-amd64.tar.gz
+            archive_name: georoute-darwin-amd64.gz
+            archive_format: gz
             binary_name: georoute
           - goos: darwin
             goarch: arm64
-            archive_name: georoute-darwin-arm64.tar.gz
+            archive_name: georoute-darwin-arm64.gz
+            archive_format: gz
             binary_name: georoute
           - goos: windows
             goarch: amd64
-            archive_name: georoute-windows-amd64.tar.gz
+            archive_name: georoute-windows-amd64.zip
+            archive_format: zip
             binary_name: georoute.exe
 
     steps:
@@ -67,7 +76,12 @@ jobs:
         run: go build -trimpath -ldflags="-s -w" -o "dist/${{ matrix.binary_name }}" ./cmd
 
       - name: Create archive
-        run: tar -C dist -czf "dist/${{ matrix.archive_name }}" "${{ matrix.binary_name }}"
+        run: |
+          if [ "${{ matrix.archive_format }}" = "zip" ]; then
+            zip -j "dist/${{ matrix.archive_name }}" "dist/${{ matrix.binary_name }}"
+          else
+            gzip -c "dist/${{ matrix.binary_name }}" > "dist/${{ matrix.archive_name }}"
+          fi
 
       - name: Upload release archive
         uses: actions/upload-artifact@v4
@@ -90,5 +104,5 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: artifacts/*.tar.gz
+          files: artifacts/*
           draft: true
