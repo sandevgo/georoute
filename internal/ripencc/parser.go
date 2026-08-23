@@ -9,7 +9,7 @@ import (
 
 type ParsedLine struct {
 	StartIP net.IP
-	Size    int
+	Size    uint64
 }
 
 func ParseLine(code, line string) (*ParsedLine, error) {
@@ -23,8 +23,8 @@ func ParseLine(code, line string) (*ParsedLine, error) {
 		return nil, fmt.Errorf("invalid IP address: %s", parts[3])
 	}
 
-	size, err := strconv.Atoi(parts[4])
-	if err != nil {
+	size, err := strconv.ParseUint(parts[4], 10, 64)
+	if err != nil || size == 0 {
 		return nil, fmt.Errorf("invalid size: %s", parts[4])
 	}
 

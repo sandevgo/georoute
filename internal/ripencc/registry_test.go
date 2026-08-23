@@ -47,6 +47,22 @@ ripencc|RU|ipv4|192.168.5.0|256|20120522|allocated`,
 192.168.5.0/24
 `,
 		},
+		{
+			name:    "MisalignedPowerOfTwoBlock",
+			input:   `ripencc|RU|ipv4|31.135.244.0|2048|20110630|assigned`,
+			country: "RU",
+			expected: `31.135.244.0/22
+31.135.248.0/22
+`,
+		},
+		{
+			name:    "NonPowerOfTwoBlock",
+			input:   `ripencc|RU|ipv4|62.122.208.0|1280|20090417|allocated`,
+			country: "RU",
+			expected: `62.122.208.0/22
+62.122.212.0/24
+`,
+		},
 	}
 
 	for _, tt := range tests {

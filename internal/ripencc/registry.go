@@ -54,13 +54,16 @@ func (r *Registry) Process() error {
 		if err != nil {
 			continue
 		}
-		
-		// Calculate the prefix directly from the size
-		// For a block of size N, the prefix is 32 - log2(N)
-		prefix := 32 - iputil.Log2Ceiling(uint32(parsed.Size))
-		
-		// Dump each block immediately without aggregation
-		fmt.Fprintf(r.writer, r.format, parsed.StartIP.String(), prefix)
+
+		blocks, err := iputil.RangeToCIDRs(parsed.StartIP, parsed.Size)
+		if err != nil {
+			continue
+		}
+
+		for _, block := range blocks {
+			prefix, _ := block.Mask.Size()
+			fmt.Fprintf(r.writer, r.format, block.IP.String(), prefix)
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -69,4 +72,3 @@ func (r *Registry) Process() error {
 
 	return nil
 }
-
